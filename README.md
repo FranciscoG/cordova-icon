@@ -1,8 +1,10 @@
-# cordova-icon
+# make-icons
 
-<img src="cordova-icon-resize.png"/>
+I took the wonderful `cordova-icon` project and de-coupled it from cordova. Icons just get generated into a folder that you specify and then you can do whatever you want with them
 
-Automatic icon resizing for Cordova. Create an icon in the root folder of your Cordova project and use cordova-icon to automatically resize and copy it for all the platforms your project supports (currenty works with iOS, Android, Windows 10 and OSX).
+<img src="make-icons-resize.png"/>
+
+Automatic icon resizing for multiple application targets. Create an icon in the root folder of your Cordova project and use make-icons to automatically resize and copy it for all the platforms your project supports (currenty works with iOS, Android, Windows 10 and OSX).
 
 ### Installation
 
@@ -11,12 +13,12 @@ $ sudo apt-get install imagemagick
 $ # on Mac: brew install imagemagick
 $ # on Windows: http://www.imagemagick.org/script/binary-releases.php#windows (check "Legacy tools")
 
-$ sudo npm install cordova-icon -g
+$ sudo npm install make-icons -g
 ```
 If you are using an older version of cordova (before 7.x):
 
 ```bash
-$ sudo npm install cordova-icon@0.13.0 -g
+$ sudo npm install make-icons@0.13.0 -g
 ```
 
 ### Requirements
@@ -32,15 +34,15 @@ You can provide a platform-specific icon by naming it `icon-[platform].png`
 (e.g `icon-android.png`, `icon-ios.png`).
 Then run:
 
-     $ cordova-icon
+     $ make-icons
 
 You also can specify manually a location for your `config.xml` or `icon.png`:
 
-     $ cordova-icon --config=config.xml --icon=icon.png
+     $ make-icons --config=config.xml --icon=icon.png
 
 If you run a old version of Cordova for iOS / Mac and you need your files in `/Resources/icons/`, use this option:
 
-     $ cordova-icon --xcode-old
+     $ make-icons --xcode-old
 
 For good results, your file should be:
 
@@ -55,34 +57,34 @@ For good results, your file should be:
 
 ### Creating a cordova-cli hook
 
-Since the execution of cordova-icon is pretty fast, you can add it as a cordova-cli hook to execute before every build.
+Since the execution of make-icons is pretty fast, you can add it as a cordova-cli hook to execute before every build.
 To create a new hook, go to your cordova project and run:
 
     $ mkdir hooks/after_prepare
-    $ vi hooks/after_prepare/cordova-icon.sh
+    $ vi hooks/after_prepare/make-icons.sh
 
 Paste the following into the hook script:
 
     #!/bin/bash
-    cordova-icon
+    make-icons
 
 Then give the script +x permission:
 
-    $ chmod +x hooks/after_prepare/cordova-icon.sh
+    $ chmod +x hooks/after_prepare/make-icons.sh
 
 That's it. Now every time you `cordova build`, the icons will be auto generated.
 
 ### Splash screens
 
-Check out [cordova-splash](https://github.com/AlexDisler/cordova-splash)
+Check out [cordova-splash](https://github.com/FranciscoG/cordova-splash)
 
 ### More
 
-- [cordova-plugin-inapppurchase](https://github.com/AlexDisler/cordova-plugin-inapppurchase) - a lightweight cordova plugin for in app purchases on iOS/Android
-- [ng-special-offer](https://github.com/AlexDisler/ng-special-offer) - prompt users to rate your cordova app in the app store
-- [ionic-lock-screen](https://github.com/AlexDisler/ionic-lock-screen) - passcode lock screen for ionic (with touch id support for iOS)
-- [ionic-zoom-view](https://github.com/AlexDisler/ionic-zoom-view) - an easy way to add a zoom view to images using an ionic modal
-- [ng-persist](https://github.com/AlexDisler/ng-persist) - store data on mobile devices (using cordova) that persists even if the user reinstalls the app
+- [cordova-plugin-inapppurchase](https://github.com/FranciscoG/cordova-plugin-inapppurchase) - a lightweight cordova plugin for in app purchases on iOS/Android
+- [ng-special-offer](https://github.com/FranciscoG/ng-special-offer) - prompt users to rate your cordova app in the app store
+- [ionic-lock-screen](https://github.com/FranciscoG/ionic-lock-screen) - passcode lock screen for ionic (with touch id support for iOS)
+- [ionic-zoom-view](https://github.com/FranciscoG/ionic-zoom-view) - an easy way to add a zoom view to images using an ionic modal
+- [ng-persist](https://github.com/FranciscoG/ng-persist) - store data on mobile devices (using cordova) that persists even if the user reinstalls the app
 
 ### License
 

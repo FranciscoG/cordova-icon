@@ -1,7 +1,7 @@
 {
-  "name": "cordova-icon",
+  "name": "make-icons",
   "version": "1.0.0",
-  "description": "Automatic icon resizing for Cordova",
+  "description": "Generate all app icons necessary from one single file",
   "main": "index.js",
   "preferGlobal": true,
   "directories": {
@@ -12,19 +12,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/AlexDisler/cordova-icon.git"
+    "url": "git://github.com/FranciscoG/make-icons.git"
   },
   "keywords": [
-    "cordova",
+    "xcode",
     "icon",
+    "icons",
     "resize"
   ],
-  "author": "Alex Disler",
+  "author": "FranciscoG",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/AlexDisler/cordova-icon/issues"
+    "url": "https://github.com/FranciscoG/make-icons/issues"
   },
-  "homepage": "https://github.com/AlexDisler/cordova-icon",
+  "homepage": "https://github.com/FranciscoG/make-icons",
   "dependencies": {
     "colors": "^0.6.2",
     "fs-extra": "^0.30.0",

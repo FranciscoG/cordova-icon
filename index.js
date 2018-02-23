@@ -11,30 +11,23 @@ var argv   = require('minimist')(process.argv.slice(2));
  * @var {Object} settings - names of the config file and of the icon image
  */
 var settings = {};
-settings.CONFIG_FILE = argv.config || 'config.xml';
 settings.ICON_FILE = argv.icon || 'icon.png';
-settings.OLD_XCODE_PATH = argv['xcode-old'] || false;
+settings.PLATFORM = argv.platform || 'all';
 
 /**
  * Check which platforms are added to the project and return their icon names and sizes
  *
- * @param  {String} projectName
  * @return {Promise} resolves with an array of platforms
  */
-var getPlatforms = function (projectName) {
+var setPlatforms = function () {
   var deferred = Q.defer();
   var platforms = [];
-  var xcodeFolder = '/Images.xcassets/AppIcon.appiconset/';
-
-  if (settings.OLD_XCODE_PATH) {
-    xcodeFolder = '/Resources/icons/';
-  }
+  
+  var targetPath = './icons';
 
   platforms.push({
     name : 'ios',
-    // TODO: use async fs.exists
-    isAdded : fs.existsSync('platforms/ios'),
-    iconsPath : 'platforms/ios/' + projectName + xcodeFolder,
+    iconsPath : targetPath + '/ios',
     icons : [
       { name: 'icon-20.png',             size : 20   },
       { name: 'icon-20@2x.png',          size : 40   },
@@ -68,8 +61,7 @@ var getPlatforms = function (projectName) {
   });
   platforms.push({
     name : 'android',
-    isAdded : fs.existsSync('platforms/android'),
-    iconsPath : 'platforms/android/app/src/main/res/',
+    iconsPath : targetPath + '/android',
     icons : [
       { name : 'drawable/icon.png',       size : 96 },
       { name : 'drawable-hdpi/icon.png',  size : 72 },
@@ -88,9 +80,7 @@ var getPlatforms = function (projectName) {
   });
   platforms.push({
     name : 'osx',
-    // TODO: use async fs.exists
-    isAdded : fs.existsSync('platforms/osx'),
-    iconsPath : 'platforms/osx/' + projectName + xcodeFolder,
+    iconsPath : targetPath + '/osx',
     icons : [
       { name : 'icon-16x16.png',    size : 16  },
       { name : 'icon-32x32.png',    size : 32  },
@@ -102,8 +92,7 @@ var getPlatforms = function (projectName) {
   });
   platforms.push({
     name : 'windows',
-    isAdded : fs.existsSync('platforms/windows'),
-    iconsPath : 'platforms/windows/images/',
+    iconsPath : targetPath + '/windows',
     icons : [
       { name : 'StoreLogo.scale-100.png', size : 50  },
       { name : 'StoreLogo.scale-125.png', size : 63  },
@@ -180,28 +169,6 @@ display.header = function (str) {
   console.log('');
 };
 
-/**
- * read the config file and get the project name
- *
- * @return {Promise} resolves to a string - the project's name
- */
-var getProjectName = function () {
-  var deferred = Q.defer();
-  var parser = new xml2js.Parser();
-  fs.readFile(settings.CONFIG_FILE, function (err, data) {
-    if (err) {
-      deferred.reject(err);
-    }
-    parser.parseString(data, function (err, result) {
-      if (err) {
-        deferred.reject(err);
-      }
-      var projectName = result.widget.name[0];
-      deferred.resolve(projectName);
-    });
-  });
-  return deferred.promise;
-};
 
 /**
  * Resizes, crops (if needed) and creates a new icon in the platform's folder.
@@ -300,19 +267,16 @@ var generateIcons = function (platforms) {
  *
  * @return {Promise} resolves if at least one platform was found, rejects otherwise
  */
-var atLeastOnePlatformFound = function () {
+var whichPlatforms = function () {
   var deferred = Q.defer();
-  getPlatforms().then(function (platforms) {
-    var activePlatforms = _(platforms).where({ isAdded : true });
-    if (activePlatforms.length > 0) {
-      display.success('platforms found: ' + _(activePlatforms).pluck('name').join(', '));
-      deferred.resolve();
+  setPlatforms().then(function (platforms) {
+    var activePlatforms;
+    if (settings.PLATFORM === 'all') {
+      activePlatforms = platforms;
     } else {
-      display.error('No cordova platforms found. ' +
-                    'Make sure you are in the root folder of your Cordova project ' +
-                    'and add platforms with \'cordova platform add\'');
-      deferred.reject();
+      activePlatforms = _(platforms).where({ name : settings.PLATFORM });
     }
+    deferred.resolve();
   });
   return deferred.promise;
 };
@@ -336,32 +300,12 @@ var validIconExists = function () {
   return deferred.promise;
 };
 
-/**
- * Checks if a config.xml file exists
- *
- * @return {Promise} resolves if exists, rejects otherwise
- */
-var configFileExists = function () {
-  var deferred = Q.defer();
-  fs.exists(settings.CONFIG_FILE, function (exists) {
-    if (exists) {
-      display.success(settings.CONFIG_FILE + ' exists');
-      deferred.resolve();
-    } else {
-      display.error('cordova\'s ' + settings.CONFIG_FILE + ' does not exist');
-      deferred.reject();
-    }
-  });
-  return deferred.promise;
-};
 
 display.header('Checking Project & Icon');
 
-atLeastOnePlatformFound()
+whichPlatforms()
   .then(validIconExists)
-  .then(configFileExists)
-  .then(getProjectName)
-  .then(getPlatforms)
+  .then(setPlatforms)
   .then(generateIcons)
   .catch(function (err) {
     if (err) {
