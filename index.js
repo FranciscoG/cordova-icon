@@ -1,10 +1,10 @@
+'use strict';
 var fs     = require('fs-extra');
 var path   = require('path');
 var xml2js = require('xml2js');
 var ig     = require('imagemagick');
 var colors = require('colors');
 var _      = require('underscore');
-var Q      = require('q');
 var argv   = require('minimist')(process.argv.slice(2));
 
 /**
@@ -13,6 +13,7 @@ var argv   = require('minimist')(process.argv.slice(2));
 var settings = {};
 settings.ICON_FILE = argv.icon || 'icon.png';
 settings.PLATFORM = argv.platform || 'all';
+settings.TARGET = argv.target || './icons'
 
 /**
  * Check which platforms are added to the project and return their icon names and sizes
@@ -20,10 +21,8 @@ settings.PLATFORM = argv.platform || 'all';
  * @return {Promise} resolves with an array of platforms
  */
 var setPlatforms = function () {
-  var deferred = Q.defer();
   var platforms = [];
-  
-  var targetPath = './icons';
+  var targetPath = settings.TARGET;
 
   platforms.push({
     name : 'ios',
@@ -146,9 +145,15 @@ var setPlatforms = function () {
       { name : 'Wide310x150Logo.scale-400.png', size : 1240, height : 600 }
     ]
   });
-  // TODO: add missing platforms
-  deferred.resolve(platforms);
-  return deferred.promise;
+
+  if (settings.PLATFORM === 'all') {
+    return Promise.resolve(platforms);
+  } else {
+    // filter platforms
+    // TODO: filter before we get to this point
+    let activePlatforms = _(platforms).where({ name : settings.PLATFORM });
+    return Promise.resolve(activePlatforms);
+  }
 };
 
 /**
@@ -178,7 +183,6 @@ display.header = function (str) {
  * @return {Promise}
  */
 var generateIcon = function (platform, icon) {
-  var deferred = Q.defer();
   var srcPath = settings.ICON_FILE;
   var platformPath = srcPath.replace(/\.png$/, '-' + platform.name + '.png');
   if (fs.existsSync(platformPath)) {
@@ -189,39 +193,40 @@ var generateIcon = function (platform, icon) {
   if (!fs.existsSync(dst)) {
     fs.mkdirsSync(dst);
   }
-  ig.resize({
-    srcPath: srcPath,
-    dstPath: dstPath,
-    quality: 1,
-    format: 'png',
-    width: icon.size,
-    height: icon.size
-  } , function(err, stdout, stderr){
-    if (err) {
-      deferred.reject(err);
-    } else {
-      deferred.resolve();
-      display.success(icon.name + ' created');
-    }
-  });
-  if (icon.height) {
-    ig.crop({
+  return new Promise(function(resolve,reject){
+    ig.resize({
       srcPath: srcPath,
       dstPath: dstPath,
       quality: 1,
       format: 'png',
       width: icon.size,
-      height: icon.height
+      height: icon.size
     } , function(err, stdout, stderr){
       if (err) {
-        deferred.reject(err);
+        reject(err);
       } else {
-        deferred.resolve();
-        display.success(icon.name + ' cropped');
+        resolve();
+        display.success(icon.name + ' created');
       }
     });
-  }
-  return deferred.promise;
+    if (icon.height) {
+      ig.crop({
+        srcPath: srcPath,
+        dstPath: dstPath,
+        quality: 1,
+        format: 'png',
+        width: icon.size,
+        height: icon.height
+      } , function(err, stdout, stderr){
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+          display.success(icon.name + ' cropped');
+        }
+      });
+    }
+  });
 };
 
 /**
@@ -247,38 +252,11 @@ var generateIconsForPlatform = function (platform) {
  * @return {Promise}
  */
 var generateIcons = function (platforms) {
-  var deferred = Q.defer();
-  var sequence = Q();
   var all = [];
-  _(platforms).where({ isAdded : true }).forEach(function (platform) {
-    sequence = sequence.then(function () {
-      return generateIconsForPlatform(platform);
-    });
-    all.push(sequence);
+  platforms.forEach(function (platform) {
+    all.push(generateIconsForPlatform(platform));
   });
-  Q.all(all).then(function () {
-    deferred.resolve();
-  });
-  return deferred.promise;
-};
-
-/**
- * Checks if at least one platform was added to the project
- *
- * @return {Promise} resolves if at least one platform was found, rejects otherwise
- */
-var whichPlatforms = function () {
-  var deferred = Q.defer();
-  setPlatforms().then(function (platforms) {
-    var activePlatforms;
-    if (settings.PLATFORM === 'all') {
-      activePlatforms = platforms;
-    } else {
-      activePlatforms = _(platforms).where({ name : settings.PLATFORM });
-    }
-    deferred.resolve();
-  });
-  return deferred.promise;
+  return Promise.all(all);
 };
 
 /**
@@ -287,24 +265,23 @@ var whichPlatforms = function () {
  * @return {Promise} resolves if exists, rejects otherwise
  */
 var validIconExists = function () {
-  var deferred = Q.defer();
-  fs.exists(settings.ICON_FILE, function (exists) {
-    if (exists) {
-      display.success(settings.ICON_FILE + ' exists');
-      deferred.resolve();
-    } else {
-      display.error(settings.ICON_FILE + ' does not exist');
-      deferred.reject();
-    }
+  return new Promise(function(resolve, reject){
+    fs.exists(settings.ICON_FILE, function (exists) {
+      if (exists) {
+        display.success(settings.ICON_FILE + ' exists');
+        resolve();
+      } else {
+        display.error(settings.ICON_FILE + ' does not exist');
+        reject();
+      }
+    });
   });
-  return deferred.promise;
 };
 
 
 display.header('Checking Project & Icon');
 
-whichPlatforms()
-  .then(validIconExists)
+validIconExists()
   .then(setPlatforms)
   .then(generateIcons)
   .catch(function (err) {
